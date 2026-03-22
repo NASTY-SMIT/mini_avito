@@ -1,3 +1,8 @@
 from django.contrib import admin
 
-# Register your models here.
+from apps.listings.models import Listing
+
+
+@admin.register(Listing)
+class ListingAdmin(admin.ModelAdmin):
+    pass

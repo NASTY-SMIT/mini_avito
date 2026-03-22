@@ -1,10 +1,12 @@
 from django.db import models
-from django.conf import settings
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class Profile(models.Model):
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
+        User,
         on_delete=models.CASCADE,
         related_name="profile"
     )
@@ -18,6 +20,10 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"Profile of {self.user.username}"
+
+    class Meta:
+        verbose_name = 'Профиль'
+        verbose_name_plural = 'Профили'
 
     # Очень удобно — profile всегда будет создаваться автоматически при создании пользователя
     @classmethod

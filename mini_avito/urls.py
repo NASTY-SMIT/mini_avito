@@ -15,6 +15,7 @@ urlpatterns = [
 
     # Наши приложения
     path("api/accounts/", include("apps.accounts.urls")),
+    # path("api/listings/", include("apps.listings.urls")),
 
     # Swagger
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
