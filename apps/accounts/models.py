@@ -1,14 +1,10 @@
+from django.conf import settings
 from django.db import models
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
 
 
 class Profile(models.Model):
     user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        related_name="profile"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
     )
     # Можно добавить позже:
     # phone = models.CharField(max_length=20, blank=True)
@@ -22,8 +18,8 @@ class Profile(models.Model):
         return f"Profile of {self.user.username}"
 
     class Meta:
-        verbose_name = 'Профиль'
-        verbose_name_plural = 'Профили'
+        verbose_name = "Профиль"
+        verbose_name_plural = "Профили"
 
     # Очень удобно — profile всегда будет создаваться автоматически при создании пользователя
     @classmethod
