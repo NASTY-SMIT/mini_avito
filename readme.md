@@ -149,7 +149,7 @@ Permissions:
         return obj.seller == request.user
 
 perform_destroy:
-Pythondef perform_destroy(self, instance):
+def perform_destroy(self, instance):
     instance.status = 'archived'
     instance.save()
 Два сериализатора:

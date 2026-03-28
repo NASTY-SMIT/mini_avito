@@ -20,4 +20,8 @@ class ListingViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(seller=self.request.user)
 
+    def perform_destroy(self, instance):
+        instance.status = 'archived'
+        instance.save()
+
 
