@@ -6,3 +6,20 @@ class IsOwnerOrReadOnly(BasePermission):
         if request.method in ["GET", "HEAD", "OPTIONS"]:
             return True
         return obj.seller == request.user
+
+
+class CanMakeOffer(BasePermission):
+    """
+    Разрешает делать предложение только если:
+    - Пользователь НЕ является продавцом этого объявления
+    - Объявление имеет статус 'active'
+    """
+
+    def has_object_permission(self, request, view, obj):
+        if request.method != 'POST':
+            return True
+        if obj.seller == request.user:
+            return False
+        if obj.status != 'active':
+            return False
+        return True
