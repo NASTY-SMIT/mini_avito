@@ -59,3 +59,18 @@ class Offer(models.Model):
 
     def __str__(self):
         return f"Offer {self.proposed_price} by {self.buyer.username} on {self.listing.title}"
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="favorites")
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="favorited_by")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Избранное'
+        verbose_name_plural = 'Избранные'
+        unique_together = ('user', 'listing')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.listing.title}"

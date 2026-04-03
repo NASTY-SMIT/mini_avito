@@ -61,6 +61,10 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Мини-Avito с предложениями цены и избранным',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'ENUM_NAME_OVERRIDES': {
+            'apps.core.enums.Status': 'ListingStatusEnum',
+            'apps.core.enums.OfferStatus': 'OfferStatusEnum',
+        }
 }
 
 MIDDLEWARE = [
