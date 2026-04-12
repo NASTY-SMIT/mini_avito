@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from django.db.models import Prefetch
 
 from apps.core.enums import OfferStatus, Status
 from apps.listings.models import Listing, Offer, Favorite
@@ -31,12 +32,20 @@ class ListingViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'offers':
             return [IsAuthenticated(), CanMakeOffer()]
+        if self.action == 'favorite':
+            return [IsAuthenticated()]
         return [IsAuthenticated(), IsOwnerOrReadOnly()]
 
     def get_queryset(self):
-        return Listing.objects.filter(
+        qs = Listing.objects.filter(
             Q(seller=self.request.user) | Q(status='active')
-        ).select_related('seller', 'category').prefetch_related('offers')
+        ).select_related('seller', 'category')
+
+        if self.action == 'retrieve':
+            qs = qs.prefetch_related(
+                Prefetch('offers', queryset=Offer.objects.select_related('buyer'))
+            )
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(seller=self.request.user)
@@ -63,7 +72,7 @@ class ListingViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
-    @action(detail=True, methods=['post', 'delete'], url_path='favorite', permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post', 'delete'], url_path='favorite')
     def favorite(self, request, pk=None):
         listing = self.get_object()
         user = request.user

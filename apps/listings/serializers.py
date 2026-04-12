@@ -9,14 +9,25 @@ from apps.listings.models import Listing, Offer, Favorite
 
 class ListingListSerializer(serializers.ModelSerializer):
     seller_username = serializers.ReadOnlyField(source='seller.username')
+
     category = serializers.SlugRelatedField(
         slug_field='slug',
-        queryset=Category.objects.all(),
+        queryset=Category.objects.all()
     )
 
     class Meta:
         model = Listing
-        fields = ("id", "seller_username", "category", "title", "price", "status")
+        fields = (
+            'id',
+            'seller_username',
+            'category',
+            'title',
+            'description',
+            'price',
+            'status',
+            'created_at',
+        )
+        read_only_fields = ['id', 'seller_username', 'created_at', 'status']
 
 
 class ListingDetailSerializer(ListingListSerializer):
@@ -26,11 +37,13 @@ class ListingDetailSerializer(ListingListSerializer):
         fields = ListingListSerializer.Meta.fields + ('offers',)
 
     def get_offers(self, obj):
-        request = self.context.get("request")
+        """ Показываем офферы только владельцу объявления. """
+        request = self.context.get('request')
         if request and obj.seller == request.user:
-            return OfferSerializer(obj.offers.all(), many=True).data
+            # Используем prefetched данные, если они есть
+            offers = getattr(obj, 'offers_cache', obj.offers.all())
+            return OfferSerializer(offers, many=True).data
         return []
-
 
 
 class OfferSerializer(serializers.ModelSerializer):
