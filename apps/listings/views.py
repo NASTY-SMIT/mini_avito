@@ -14,6 +14,7 @@ from apps.listings.models import Listing, Offer, Favorite
 from apps.listings.permissions import IsOwnerOrReadOnly, CanMakeOffer
 from apps.listings.serializers import OfferSerializer, ListingListSerializer, ListingDetailSerializer, \
     FavoriteSerializer
+from apps.listings.services import ListingService, FavoriteService, OfferService
 
 
 class ListingViewSet(viewsets.ModelViewSet):
@@ -51,8 +52,7 @@ class ListingViewSet(viewsets.ModelViewSet):
         serializer.save(seller=self.request.user)
 
     def perform_destroy(self, instance):
-        instance.status = 'archived'
-        instance.save()
+        ListingService.archive_listing(instance)
 
     @action(detail=True, methods=['post'], url_path='offers')
     def offers(self, request, pk=None):
@@ -62,9 +62,10 @@ class ListingViewSet(viewsets.ModelViewSet):
             context={'request': request, 'listing': listing}
         )
         serializer.is_valid(raise_exception=True)
-        offer = serializer.save(
+        offer = OfferService.create_offer(
+            listing=listing,
             buyer=request.user,
-            listing=listing
+            proposed_price=serializer.validated_data['proposed_price']
         )
 
         return Response(
@@ -77,13 +78,13 @@ class ListingViewSet(viewsets.ModelViewSet):
         listing = self.get_object()
         user = request.user
         if request.method == 'POST':
-            favorite, created = Favorite.objects.get_or_create(user=user, listing=listing)
+            favorite, created = FavoriteService.add(user, listing)
             if not created:
                 return Response({"detail": "Уже в избранном"}, status=status.HTTP_400_BAD_REQUEST)
             return Response({"detail": "Добавлено в избранное"}, status=status.HTTP_201_CREATED)
 
         elif request.method == 'DELETE':
-            deleted_count, _ = Favorite.objects.filter(user=user, listing=listing).delete()
+            deleted_count = FavoriteService.remove(user, listing)
             if deleted_count == 0:
                 return Response({"detail": "Не найдено в избранном"}, status=status.HTTP_404_NOT_FOUND)
             return Response({"detail": "Удалено из избранного"}, status=status.HTTP_204_NO_CONTENT)
@@ -104,47 +105,15 @@ class OfferViewSet(viewsets.ModelViewSet):
         ).select_related('listing', 'buyer', 'listing__seller')
 
     def update(self, request, *args, **kwargs):
-        user = request.user
         offer_id = kwargs.get("pk")
+        new_status = request.data.get("status")
 
-        with transaction.atomic():
-
-            # ЛОЧИМ оффер + объявление
-            offer = Offer.objects.select_related("listing").select_for_update().get(id=offer_id)
-
-            listing = Listing.objects.select_for_update().get(id=offer.listing.id)
-
-            if listing.seller != user:
-                raise PermissionDenied("Только продавец может управлять офферами")
-
-            if listing.status == Status.SOLD:
-                raise ValidationError("Объявление уже продано")
-
-            if offer.status != OfferStatus.PENDING:
-                raise ValidationError("Оффер уже обработан")
-
-            new_status = request.data.get("status")
-
-            if new_status == OfferStatus.ACCEPTED:
-
-                # принимаем оффер
-                offer.status = OfferStatus.ACCEPTED
-                offer.save()
-
-                # объявление → sold
-                listing.status = Status.SOLD
-                listing.save()
-
-                # остальные → rejected
-                Offer.objects.filter(
-                    listing=listing
-                ).exclude(id=offer.id).update(status=OfferStatus.REJECTED)
-
-            elif new_status == OfferStatus.REJECTED:
-                offer.status = OfferStatus.REJECTED
-                offer.save()
-            else:
-                raise ValidationError("Неверный статус")
+        if new_status == OfferStatus.ACCEPTED:
+            offer = OfferService.accept_offer(offer_id, request.user)
+        elif new_status == OfferStatus.REJECTED:
+            offer = OfferService.reject_offer(offer_id, request.user)
+        else:
+            raise ValidationError("Неверный статус")
 
         return Response(self.get_serializer(offer).data)
 
