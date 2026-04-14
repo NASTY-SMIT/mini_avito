@@ -1,20 +1,21 @@
 from django.db.models import Q
-from django.db import transaction
 from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.db.models import Prefetch
 
-from apps.core.enums import OfferStatus, Status
+from apps.core.enums import OfferStatus
 from apps.listings.models import Listing, Offer, Favorite
 from apps.listings.permissions import IsOwnerOrReadOnly, CanMakeOffer
 from apps.listings.serializers import OfferSerializer, ListingListSerializer, ListingDetailSerializer, \
     FavoriteSerializer
-from apps.listings.services import ListingService, FavoriteService, OfferService
+from apps.listings.services.favorite_service import FavoriteService
+from apps.listings.services.listing_services import ListingService
+from apps.listings.services.offer_service import OfferService
 
 
 class ListingViewSet(viewsets.ModelViewSet):

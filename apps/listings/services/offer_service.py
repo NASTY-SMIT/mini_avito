@@ -1,36 +1,8 @@
 from django.db import transaction
-from django.db.models import Prefetch
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from apps.core.enums import OfferStatus, Status
-from .models import Listing, Offer, Favorite
-
-
-class ListingService:
-    """Сервис для работы с объявлениями"""
-
-    @staticmethod
-    def archive_listing(listing: Listing) -> None:
-        """Мягкое удаление объявления"""
-        listing.status = Status.ARCHIVED
-        listing.save(update_fields=['status'])
-
-
-class FavoriteService:
-    """Сервис для работы с избранным"""
-
-    @staticmethod
-    def add(user, listing: Listing):
-        """Добавить объявление в избранное"""
-        favorite, created = Favorite.objects.get_or_create(user=user, listing=listing)
-        return favorite, created
-
-    @staticmethod
-    def remove(user, listing: Listing) -> int:
-        """Удалить объявление из избранного"""
-        deleted_count, _ = Favorite.objects.filter(user=user, listing=listing).delete()
-        return deleted_count
-
+from apps.listings.models import Listing, Offer
 
 
 class OfferService:
